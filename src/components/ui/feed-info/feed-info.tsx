@@ -3,27 +3,42 @@ import React, { FC, memo } from 'react';
 import styles from './feed-info.module.css';
 
 import { FeedInfoUIProps, HalfColumnProps, TColumnProps } from './type';
+import { TOrder } from '@utils-types';
+import { useSelector } from '../../../services/store';
+import {
+  selectOrders,
+  selectTotal,
+  selectTotalToday
+} from '../../../services/slices/feedSlice';
 
-export const FeedInfoUI: FC<FeedInfoUIProps> = memo(
-  ({ feed, readyOrders, pendingOrders }) => {
-    const { total, totalToday } = feed;
+const getOrders = (orders: TOrder[], status: string): number[] =>
+  orders
+    .filter((item) => item.status === status)
+    .map((item) => item.number)
+    .slice(0, 20);
 
-    return (
-      <section>
-        <div className={styles.columns}>
-          <HalfColumn
-            orders={readyOrders}
-            title={'Готовы'}
-            textColor={'blue'}
-          />
-          <HalfColumn orders={pendingOrders} title={'В работе'} />
-        </div>
-        <Column title={'Выполнено за все время'} content={total} />
-        <Column title={'Выполнено за сегодня'} content={totalToday} />
-      </section>
-    );
-  }
-);
+export const FeedInfoUI: FC<FeedInfoUIProps> = () => {
+  const orders: TOrder[] = useSelector(selectOrders);
+  const total = useSelector(selectTotal);
+  const totalToday = useSelector(selectTotalToday);
+
+  const readyOrders = getOrders(orders, 'done');
+  const pendingOrders = getOrders(orders, 'pending');
+  const feed = {
+    total,
+    totalToday
+  };
+  return (
+    <section>
+      <div className={styles.columns}>
+        <HalfColumn orders={readyOrders} title={'Готовы'} textColor={'blue'} />
+        <HalfColumn orders={pendingOrders} title={'В работе'} />
+      </div>
+      <Column title={'Выполнено за все время'} content={total} />
+      <Column title={'Выполнено за сегодня'} content={totalToday} />
+    </section>
+  );
+};
 
 const HalfColumn: FC<HalfColumnProps> = ({ orders, title, textColor }) => (
   <div className={`pr-6 ${styles.column}`}>
