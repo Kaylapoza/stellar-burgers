@@ -31,12 +31,13 @@ export const ProfileUI: FC<ProfileUIProps> = () => {
       email: user?.email || '',
       password: ''
     });
-  }, [user?.name, user?.email]);
-  useEffect(() => {
-    () => {
+  }, [user]);
+  useEffect(
+    () => () => {
       dispatch(clearUserError());
-    };
-  }, [dispatch]);
+    },
+    [dispatch]
+  );
 
   const isFormChanged =
     formValue.name !== (user?.name || '') ||

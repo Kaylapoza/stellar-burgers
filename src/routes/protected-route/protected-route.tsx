@@ -31,8 +31,14 @@ export const ProtectedRoute = ({
 
   // Для роутов только неавторизованных (/login), если уже вошел
   if (onlyUnAuth && user) {
-    const from = location.state?.from || { pathname: '/' };
-    return <Navigate replace to={from} />;
+    const from = location.state?.from;
+    // Защита от бесконечного цикла: если from ведет на /login или отсутствует, отправляем на главную '/'
+    const target =
+      from && from.pathname !== '/login' && from.pathname !== '/register'
+        ? from
+        : { pathname: '/' };
+
+    return <Navigate replace to={target} />;
   }
 
   return children;

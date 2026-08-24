@@ -17,18 +17,26 @@ const getOrders = (orders: TOrder[], status: string): number[] =>
 
 export const FeedInfo: FC = () => {
   /** TODO: взять переменные из стора */
-  const orders: TOrder[] = useSelector(selectOrders);
+  const orders = useSelector(selectOrders);
   const total = useSelector(selectTotal);
   const totalToday = useSelector(selectTotalToday);
+
+  // Готовые заказы (done)
+  const readyOrders = orders
+    .filter((item) => item.status === 'done')
+    .map((item) => item.number)
+    .slice(0, 20);
+
+  // Заказы в работе (pending)
+  const pendingOrders = orders
+    .filter((item) => item.status === 'pending')
+    .map((item) => item.number)
+    .slice(0, 20);
 
   const feed = {
     total,
     totalToday
   };
-
-  const readyOrders = getOrders(orders, 'done');
-
-  const pendingOrders = getOrders(orders, 'pending');
 
   return (
     <FeedInfoUI
