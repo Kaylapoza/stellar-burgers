@@ -1,21 +1,39 @@
-import { FC, useMemo } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
-import { TIngredient } from '@utils-types';
+import { TIngredient, TOrder } from '@utils-types';
+import { useSelector } from '../../services/store';
+import { selectIngredients } from '../../services/slices/ingredientSlice';
+import { useParams } from 'react-router-dom';
+import { selectOrders } from '../../services/slices/feedSlice';
+import { getOrderByNumberApi } from '@api';
 
 export const OrderInfo: FC = () => {
   /** TODO: взять переменные orderData и ingredients из стора */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0
-  };
+  const { number } = useParams<{ number: string }>();
+  const ingredients: TIngredient[] = useSelector(selectIngredients);
+  const orders = useSelector(selectOrders);
 
-  const ingredients: TIngredient[] = [];
+  const [orderData, setOrderData] = useState<TOrder | null>(null);
+
+  // 1. Пытаемся найти заказ в Redux-сторе (из ленты)
+  const orderFromStore = useMemo(
+    () => orders.find((item) => item.number === Number(number)),
+    [orders, number]
+  );
+
+  useEffect(() => {
+    if (orderFromStore) {
+      setOrderData(orderFromStore);
+    } else if (number) {
+      // 2. Если в сторе нет (перезагрузка страницы) — запрашиваем через API
+      getOrderByNumberApi(Number(number)).then((data) => {
+        if (data?.orders?.[0]) {
+          setOrderData(data.orders[0]);
+        }
+      });
+    }
+  }, [orderFromStore, number]);
 
   /* Готовим данные для отображения */
   const orderInfo = useMemo(() => {
