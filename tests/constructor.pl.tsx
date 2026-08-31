@@ -14,37 +14,17 @@ test.describe('Конструктор бургеров с моковыми ин�
     await page.addInitScript(() => {
       localStorage.setItem('refreshToken', 'test-refresh-token');
     });
-    await page.route('**/api/auth/user', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        json: {
-          success: true,
-          user: {
-            email: 'test@example.com',
-            name: 'Test User'
-          }
-        }
-      });
-    });
-
-    await page.route('**/api/orders', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        json: {
-          success: true,
-          name: 'Краторный бургер',
-          order: {
-            number: 7777 // Этот номер мы  будем проверять в модалке
-          }
-        }
-      });
-    });
 
     await page.routeFromHAR('./tests/hars/ingredients.har', {
-      url: '**/api/ingredients',
-      notFound: 'fallback'
+      url: '**/api/ingredients'
+    });
+
+    await page.routeFromHAR('./tests/hars/user.har', {
+      url: '**/auth/user'
+    });
+
+    await page.routeFromHAR('./tests/hars/orders.har', {
+      url: '**/api/orders'
     });
 
     await page.goto('/');
@@ -58,12 +38,10 @@ test.describe('Конструктор бургеров с моковыми ин�
   });
 
   test('должен добавлять булки и начинки в конструктор', async ({ page }) => {
-    // 1. Находим изолированные секции по их data-testid
     const constructorSection = page.getByTestId('burger-constructor');
     const bunsCategory = page.getByTestId('buns-category');
     const mainsCategory = page.getByTestId('mains-category');
 
-    // 2. Ищем кнопку "Добавить" СТРОГО внутри нужной секции
     await bunsCategory
       .getByRole('button', { name: 'Добавить' })
       .first()
@@ -73,7 +51,6 @@ test.describe('Конструктор бургеров с моковыми ин�
       .first()
       .click();
 
-    // 3. Проверяем конструктор
     await expect(constructorSection).not.toContainText('Выберите булки');
     await expect(constructorSection).not.toContainText('Выберите начинку');
   });
@@ -87,7 +64,7 @@ test.describe('Конструктор бургеров с моковыми ин�
 
     await card.click();
 
-    await expect(modal).toBeVisible(); //модалка открылась при клике
+    await expect(modal).toBeVisible();
     await expect(modal).toContainText(ingredientName!);
   });
 
@@ -120,6 +97,7 @@ test.describe('Конструктор бургеров с моковыми ин�
     const orderButton = page.getByRole('button', { name: 'Оформить заказ' });
     const modal = page.getByTestId('modal');
 
+    // 1. Добавляем ингредиенты
     await bunsCategory
       .getByRole('button', { name: 'Добавить' })
       .first()
@@ -129,8 +107,14 @@ test.describe('Конструктор бургеров с моковыми ин�
       .first()
       .click();
 
-    orderButton.click();
+    // 2. Проверяем, что кнопуля доступна и ингредиенты действительно в конструкторе
+    await expect(constructorSection).not.toContainText('Выберите булки');
+    await expect(constructorSection).not.toContainText('Выберите начинку');
 
+    // 3. Кликаем оформление
+    await orderButton.click();
+
+    // 4. Проверяем появление модалки с 7777
     await expect(modal).toBeVisible();
     await expect(modal).toContainText('7777');
     await expect(constructorSection).toContainText('Выберите булки');
